@@ -93,27 +93,75 @@ void bstShow(struct node *t) {
 // Returns the number of leaves in the given BST
 int bstNumLeaves(struct node *t) {
 	// TODO: Task 1 - Implement this function
-	return 0;
+	if (t == NULL) {
+		return 0;
+	} else if (t->left == NULL && t->right == NULL) {
+		return 1;
+	} else {
+		return bstNumLeaves(t->left) + bstNumLeaves(t->right);
+	}
 }
 
 // Returns the range of the given BST
 int bstRange(struct node *t) {
 	// TODO: Task 2 - Implement this function
-	return 0;
+	int lo, hi;
+	struct node *root = t;
+	struct node *curr = t;
+	if (curr == NULL) {
+		return -1;
+	} else {
+		// Find smallest value
+		while (curr->left != NULL) {
+			curr = curr->left;
+		}
+		lo = curr->value;
+
+		// Find largest value
+		curr = root; // Return root node
+		while (curr->right != NULL) {
+			curr = curr->right;
+		}
+		hi = curr->value;
+
+		return hi - lo;
+	}
 }
 
 // Deletes all of the leaves in the given BST and returns the root of
 // the updated BST
 struct node *bstDeleteLeaves(struct node *t) {
 	// TODO: Task 3 - Implement this function
-	return t;
+	if (t == NULL) {
+		return NULL;
+	} else if (t->left == NULL && t->right == NULL) {
+		free(t);
+		return NULL;
+	} else {
+		t->left = bstDeleteLeaves(t->left);
+		t->right = bstDeleteLeaves(t->right);
+		return t;
+	}
 }
 
 // Returns the value in the BST which is closest to the given value
 // Assumes that the BST is not empty
 int bstClosest(struct node *t, int val) {
 	// TODO: Task 4 - Implement this function
-	return -1;
+	int value; 
+	int closest = t->value;
+	while (t != NULL) {
+		value = t->value;
+		if (abs(value - val) < abs(closest - val)) {
+			closest = value;
+		}
+		if (val < t->value) {
+			t = t->left;
+		} else {
+			t = t->right;
+		}
+	}
+	return closest;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -148,6 +196,25 @@ void bstPostOrder(struct node *t) {
 // Prints the level-order traversal of the given BST
 void bstLevelOrder(struct node *t) {
 	// TODO: Task 5 - Implement this function
+	if (t == NULL) {
+		return;
+	}
+	
+	Queue nodeQueue = QueueNew();
+	QueueEnqueue(nodeQueue, t);
+
+	while (!QueueIsEmpty(nodeQueue)) {
+		struct node *n = QueueFront(nodeQueue);
+		showBstNode(n);
+		if (n->left != NULL) {
+			QueueEnqueue(nodeQueue, n->left);
+		}
+		if (n->right != NULL) {
+			QueueEnqueue(nodeQueue, n->right);
+		}
+		QueueDequeue(nodeQueue); 
+	}
+	QueueFree(nodeQueue);
 }
 
 // Prints the value in the given node

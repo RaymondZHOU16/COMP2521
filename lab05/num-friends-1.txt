@@ -1,0 +1,28 @@
++ Harry
++ Ron
++ Hermione
++ Ginny
++ Neville
++ Luna
++ Fred
++ George
++ Draco
++ Cho
+f Harry Ron
+f Ron Hermione
+f Harry Ginny
+f Ron Ginny
+f Hermione Ginny
+f Hermione Luna
+f Fred George
+f Fred Ginny
+f George Ginny
+f Draco Cho
+f Draco Hermione
+f Draco Harry
+f Luna Neville
+f Luna Ginny
+f Neville Ginny
+m Draco Ginny
+m Harry Hermione
+q
