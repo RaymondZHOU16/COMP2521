@@ -236,6 +236,7 @@ List FbMutualFriends(Fb fb, char *name1, char *name2) {
         while (user2 != NULL) {
             if (user1->v == user2->v) {
                 ListAppend(l, fb->names[user1->v]);
+                ListSort(l);
             }
             user2 = user2->next;
         }
@@ -245,9 +246,44 @@ List FbMutualFriends(Fb fb, char *name1, char *name2) {
     return l;
 }
 
+// Custom comparison function for qsort
+int compareRecommendations(const void *a, const void *b) {
+    const struct recommendation *rec1 = (const struct recommendation *)a;
+    const struct recommendation *rec2 = (const struct recommendation *)b;
+    
+    // Compare by numMutualFriends
+    return rec2->numMutualFriends - rec1->numMutualFriends;
+}
+
 int FbFriendRecs1(Fb fb, char *name, struct recommendation recs[]) {
     // TODO: Complete this function
-    return 0;
+    int numRecs = 0;
+    int id = nameToId(fb, name);
+    //printf("----\nNumber of Fb: %d\n", fb->numPeople);
+    for (int n=0; n < fb->numPeople; n++) {
+        //printf("\tHere is %d(%s)\n", n, fb->names[n]);
+        if (n == id) {
+            n++;
+        }
+        //printf("After IF Here is %d(%s)\n", n, fb->names[n]);
+        if (!FbIsFriend(fb, name, fb->names[n])) {
+            //printf("\tPass check fris statue\n");
+            List tmp = FbMutualFriends(fb, name, fb->names[n]);
+            int tmpSize = ListSize(tmp);
+            //printf("Number of MutFris: %d\n----\n", tmpSize);
+            if (tmpSize > 0) {
+                recs[numRecs].name = fb->names[n];
+                recs[numRecs].numMutualFriends = tmpSize;
+                numRecs++;
+            }
+            ListFree(tmp);
+        }
+    }
+    
+    // Sort in in descending order
+    qsort(recs, numRecs, sizeof(struct recommendation), compareRecommendations);
+
+    return numRecs;
 }
 
 ////////////////////////////////////////////////////////////////////////

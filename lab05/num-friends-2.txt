@@ -1,0 +1,8 @@
++ Harry
++ Ron
++ Hermione
++ Ginny
+f Harry Ron
+f Harry Ginny
+f Hermione Ginny
+m Hermione Hermione

@@ -8,31 +8,47 @@ NOTE:
  FbNumFriends
 ===============
 
-- Worst case time complexity: O(...)
+- Worst case time complexity: O(n)
 
-- Explanation: ...
+- Explanation: FbIsFriend function is related to the nameToId function.
+                And from the nameToId function, there is a Mapcontains function, 
+                which time complexity is O(log n). And, in my code, 
+                i use while loop to traverse all of the list, which is O(n). 
+                Thus, time complexity is O(log n + n) = O(n)
 
 ===============
   FbUnfriend
 ===============
 
-- Worst case time complexity: O(...)
+- Worst case time complexity: O(n)
 
-- Explanation: ...
-
+- Explanation: In the function, it contains the nameToId functions and two while loops 
+                which contains an if statement. The time complexity of the nameToId function is O(log n). 
+                The time complexity of two while loop is O(n). To get the worst time complexity, 
+                O(n) cost the largest time.
+                Thus, the time complexity of FbMutualFriends is O(n).
 ===============
 FbMutualFriends
 ===============
 
-- Worst case time complexity: O(...)
+- Worst case time complexity: O(n^2)
 
-- Explanation: ...
+- Explanation: In the FbMutualFriends function, it contains the ListNew function, 
+                nameToId function and two nest while loop which contains an if statement
+                and ListAppend function. The time complexity of ListNew function is O(1)
+                and nameToId function is O(log n). The time complexity of the two nest while loops is O(n^2). 
+                To get the worst time complexity, O(n^2) cost the largest time.
+                Thus, the time complexity of FbMutualFriends is O(n).
 
 ===============
  FbFriendRecs1
 ===============
 
-- Worst case time complexity: O(...)
+- Worst case time complexity: O(n^3)
 
-- Explanation: ...
+- Explanation:  In the FbFriendRecs1 function, it contains a while loop 
+                which contains FbMutualFriends function in it and there is also a FbIsFriend function 
+                in one of the while loop. The time complexity of FbIsFriend function inside while loop is O(n). The time complexity of 
+                one FbMutualFriends function loop inside while loop is O(n^3), so the time complexity
+                of FbFriendRecs1 is O(n^3).
 
