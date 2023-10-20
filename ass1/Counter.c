@@ -9,119 +9,131 @@
 #include "Counter.h"
 
 struct node {
-    struct item data;
+    struct item item;
     struct node *left;
     struct node *right;
 };
 
 struct counter {
     struct node *root;
-    int numItems;
 };
 
-// My Functions
-// Helper function to create a new node
-static struct node *createNode(char *token) {
-    struct node *newNode = malloc(sizeof(struct node));
-    if (newNode == NULL) {
-        fprintf(stderr, "Memory allocation error\n");
-        exit(EXIT_FAILURE);
-    }
-    newNode->data.token = strdup(token);
-    newNode->data.freq = 1;
-    newNode->left = newNode->right = NULL;
-    return newNode;
-}
-
-// Helper function to free the nodes in the BST
-static void freeNodes(struct node *root) {
-    if (root == NULL) return;
-    freeNodes(root->left);
-    freeNodes(root->right);
-    free(root->data.token);
-    free(root);
-}
-
-// Helper function to add a token to the BST
-static void addToken(struct node **root, char *token) {
-    if (*root == NULL) {
-        *root = createNode(token);
-    } else {
-        int cmp = strcmp(token, (*root)->data.token);
-        if (cmp == 0) {
-            (*root)->data.freq++;
-        } else if (cmp < 0) {
-            addToken(&((*root)->left), token);
-        } else {
-            addToken(&((*root)->right), token);
-        }
-    }
-}
-
-// Helper function to collect items into an array
-static void collectItems(struct node *root, struct item *items, int *index) {
-    if (root == NULL) return;
-    collectItems(root->left, items, index);
-	collectItems(root->right, items, index);
-    items[*index] = root->data;
-    (*index)++;
-}
-
 Counter CounterNew(void) {
-    Counter counter = malloc(sizeof(struct counter));
-    if (counter == NULL) {
-        fprintf(stderr, "Memory allocation error\n");
+    Counter c = malloc(sizeof(struct counter));
+    if (c == NULL) {
+        fprintf(stderr, "Error: out of memory\n");
         exit(EXIT_FAILURE);
     }
-    counter->root = NULL;
-    counter->numItems = 0;
-    return counter;
+    c->root = NULL;
+    return c;
+}
+
+static void freeNode(struct node *n) {
+    if (n == NULL) {
+        return;
+    }
+    freeNode(n->left);
+    freeNode(n->right);
+    free(n->item.token);
+    free(n);
 }
 
 void CounterFree(Counter c) {
-    if (c == NULL) return;
-    freeNodes(c->root);
+    if (c == NULL) {
+        return;
+    }
+    freeNode(c->root);
     free(c);
 }
 
-void CounterAdd(Counter c, char *token) {
-    addToken(&(c->root), token);
-    // Increment numItems only when a new distinct token is added
-    if (CounterGet(c, token) == 1) {
-        c->numItems++;
+static struct node *addNode(struct node *n, char *token) {
+    if (n == NULL) {
+        n = malloc(sizeof(struct node));
+        if (n == NULL) {
+            fprintf(stderr, "Error: out of memory\n");
+            exit(EXIT_FAILURE);
+        }
+        n->item.token = strdup(token);
+        n->item.freq = 1;
+        n->left = NULL;
+        n->right = NULL;
+    } else if (strcmp(token, n->item.token) < 0) {
+        n->left = addNode(n->left, token);
+    } else if (strcmp(token, n->item.token) > 0) {
+        n->right = addNode(n->right, token);
+    } else {
+        n->item.freq++;
     }
+    return n;
+}
+
+void CounterAdd(Counter c, char *token) {
+    if (c == NULL || token == NULL) {
+        return;
+    }
+    c->root = addNode(c->root, token);
+}
+
+static int countNodes(struct node *n) {
+    if (n == NULL) {
+        return 0;
+    }
+    return 1 + countNodes(n->left) + countNodes(n->right);
 }
 
 int CounterNumItems(Counter c) {
-	return c->numItems;
+    if (c == NULL) {
+        return 0;
+    }
+    return countNodes(c->root);
+}
+
+static int getNodeCount(struct node *n, char *token) {
+    if (n == NULL) {
+        return 0;
+    }
+    if (strcmp(token, n->item.token) < 0) {
+        return getNodeCount(n->left, token);
+    } else if (strcmp(token, n->item.token) > 0) {
+        return getNodeCount(n->right, token);
+    } else {
+        return n->item.freq;
+    }
 }
 
 int CounterGet(Counter c, char *token) {
-    if (c == NULL || token == NULL) return 0;
-    struct node *current = c->root;
-    while (current != NULL) {
-        int cmp = strcmp(token, current->data.token);
-        if (cmp == 0) {
-            return current->data.freq;
-        } else if (cmp < 0) {
-            current = current->left;
-        } else {
-            current = current->right;
-        }
+    if (c == NULL || token == NULL) {
+        return 0;
     }
-    return 0;
+    return getNodeCount(c->root, token);
+}
+
+static void copyItem(struct item *dest, struct item *src) {
+    dest->token = strdup(src->token);
+    dest->freq = src->freq;
+}
+
+static void fillArray(struct node *n, struct item *items, int *index) {
+    if (n == NULL) {
+        return;
+    }
+    fillArray(n->left, items, index);
+    copyItem(&items[*index], &n->item);
+    (*index)++;
+    fillArray(n->right, items, index);
 }
 
 struct item *CounterItems(Counter c, int *numItems) {
-    if (c == NULL || numItems == NULL) return NULL;
-    struct item *items = malloc(sizeof(struct item) * c->numItems);
+    if (c == NULL || numItems == NULL) {
+        return NULL;
+    }
+    struct item *items = malloc(CounterNumItems(c) * sizeof(struct item));
     if (items == NULL) {
-        fprintf(stderr, "Memory allocation error\n");
+        fprintf(stderr, "Error: out of memory\n");
         exit(EXIT_FAILURE);
     }
     int index = 0;
-    collectItems(c->root, items, &index);
-    *numItems = c->numItems;
+    fillArray(c->root, items, &index);
+    *numItems = CounterNumItems(c);
     return items;
 }
-
