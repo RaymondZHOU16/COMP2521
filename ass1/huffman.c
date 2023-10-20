@@ -12,7 +12,6 @@
 
 // Task 1
 void decode(struct huffmanTree *tree, char *encoding, char *outputFilename) {
-
     // Check if any of the input parameters are NULL
     if (tree == NULL || encoding == NULL || outputFilename == NULL) {
         fprintf(stderr, "Invalid input parameters\n");
