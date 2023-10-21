@@ -22,20 +22,38 @@ typedef struct Stack {
     int capacity;
 } Stack;
 
-static struct huffmanTree *createLeaf(struct item item);
-static struct huffmanTree *createNode(struct huffmanTree *left, struct huffmanTree *right);
-static char *findingEncoding(struct huffmanTree *tree, char *token);
+typedef struct AVLNode {
+    char *token;
+    char *encoding;
+    struct AVLNode *left;
+    struct AVLNode *right;
+    int height;
+} AVLNode;
+
+// Priority queue ADT functions
 static struct priority_queue *priority_queue_new();
 static void priority_queue_free(struct priority_queue *queue);
 static int priority_queue_size(struct priority_queue *queue);
 static void priority_queue_insert(struct priority_queue *queue, struct huffmanTree *value);
 static struct huffmanTree *priority_queue_remove(struct priority_queue *queue);
-static Stack* createStack();
-static void resizeStack(Stack *stack);
-static void push(Stack *stack, char value);
-static char pop(Stack *stack);
-static char* stackToString(Stack *stack);
-static int findToken(struct huffmanTree *tree, char *token, Stack *stack, char **result);
+
+// Task 3 Functions to create a Huffman tree
+static struct huffmanTree *createLeaf(struct item item);
+static struct huffmanTree *createNode(struct huffmanTree *left, struct huffmanTree *right);
+
+// AVL Tree Mapping Functions
+static AVLNode* AVLTreeMapping(struct huffmanTree *tree);
+static AVLNode* insertAVL(AVLNode* node, char *token, char *encoding);
+static void traverseHuffman(struct huffmanTree *node, char *path, AVLNode **avlRoot);
+static int height(AVLNode *node);
+static int getBalance(AVLNode *node);
+static AVLNode* rightRotate(AVLNode *y);
+static AVLNode* leftRotate(AVLNode *x);
+static int max(int a, int b);
+static void freeAVLTree(AVLNode *root);
+
+// Task 4
+
 
 // Task 1
 void decode(struct huffmanTree *tree, char *encoding, char *outputFilename) {
@@ -131,9 +149,12 @@ struct huffmanTree *createHuffmanTree(char *inputFilename) {
 
 // Task 4
 char *encode(struct huffmanTree *tree, char *inputFilename) {
-	// Open to read the input file
+    // Open the input file
     File inputFile = FileOpenToRead(inputFilename);
-    
+
+    // Create an AVL tree to store the mapping from tokens to encodings
+    AVLNode *avlRoot = AVLTreeMapping(tree);
+
     // Create a string to store the encoded string
     char *outputString = malloc(1 * sizeof(char));
     outputString[0] = '\0';
@@ -141,8 +162,21 @@ char *encode(struct huffmanTree *tree, char *inputFilename) {
     char token[MAX_TOKEN_LEN];
     while ((FileReadToken(inputFile, token))) {
         // Find the encoding for the current token
-        char *encoding = findingEncoding(tree, token);
-        // printf("Token: %s; Encoding: %s\n", token, encoding);
+        AVLNode *curr = avlRoot;
+        while (curr != NULL) {
+            if (strcmp(token, curr->token) < 0) {
+                curr = curr->left;
+            } else if (strcmp(token, curr->token) > 0) {
+                curr = curr->right;
+            } else {
+                break;
+            }
+        }
+        if (curr == NULL) {
+            fprintf(stderr, "Error: token not found in AVL tree\n");
+            exit(EXIT_FAILURE);
+        }
+        char *encoding = strdup(curr->encoding);
 
         // Append the encoding to the output string
         size_t newLength = strlen(outputString) + strlen(encoding) + 2;
@@ -150,7 +184,7 @@ char *encode(struct huffmanTree *tree, char *inputFilename) {
         strcat(outputString, encoding);
 
         // Free the encoding string
-        free(encoding);
+        free(encoding); 
     }
 
     // Append the null terminator to the output string
@@ -158,6 +192,7 @@ char *encode(struct huffmanTree *tree, char *inputFilename) {
     strcat(outputString, "\0");
 
     // Close the input file and return the encoded string
+    freeAVLTree(avlRoot);
     FileClose(inputFile);
     return outputString;
 }
@@ -192,42 +227,6 @@ static struct huffmanTree *createNode(struct huffmanTree *left, struct huffmanTr
     node->left = left;
     node->right = right;
     return node;
-}
-
-static char* stackToString(Stack *stack) {
-    char *result = (char *)malloc((stack->top + 2) * sizeof(char));
-    strncpy(result, stack->data, stack->top + 1);
-    result[stack->top + 1] = '\0';
-    return result;
-}
-
-// Recursive function to find the Huffman encoding
-static int findToken(struct huffmanTree *tree, char *token, Stack *stack, char **result) {
-    if (!tree) return 0;
-
-    if (tree->token && strcmp(tree->token, token) == 0) {
-        *result = stackToString(stack);
-        return 1;
-    }
-
-    push(stack, '0');
-    if (findToken(tree->left, token, stack, result)) return 1;
-    pop(stack);
-
-    push(stack, '1');
-    if (findToken(tree->right, token, stack, result)) return 1;
-    pop(stack);
-
-    return 0;
-}
-
-static char* findingEncoding(struct huffmanTree *tree, char *token) {
-    Stack *stack = createStack();
-    char *result = NULL;
-    findToken(tree, token, stack, &result);
-    free(stack->data);
-    free(stack);
-    return result;
 }
 
 //// My Priority Queue Functions ////
@@ -294,28 +293,135 @@ static struct huffmanTree *priority_queue_remove(struct priority_queue *queue) {
     return result;
 }
 
-//// My Stack Functions ////
-static Stack* createStack() {
-    Stack *stack = (Stack *)malloc(sizeof(Stack));
-    stack->capacity = 10; // Initial capacity
-    stack->top = -1;
-    stack->data = (char *)malloc(stack->capacity * sizeof(char));
-    return stack;
+//// My AVL Tree Functions ////
+// Helper function to get the height of an AVL node
+int height(AVLNode *node) {
+    if (node == NULL) return 0;
+    return node->height;
 }
 
-static void resizeStack(Stack *stack) {
-    stack->capacity *= 2;
-    stack->data = (char *)realloc(stack->data, stack->capacity * sizeof(char));
+// Helper function to get the balance factor of an AVL node
+int getBalance(AVLNode *node) {
+    if (node == NULL) return 0;
+    return height(node->left) - height(node->right);
 }
 
-static void push(Stack *stack, char value) {
-    if (stack->top == stack->capacity - 1) {
-        resizeStack(stack);
+// Right rotate function
+AVLNode* rightRotate(AVLNode *y) {
+    AVLNode *x = y->left;
+    AVLNode *T2 = x->right;
+
+    x->right = y;
+    y->left = T2;
+
+    y->height = 1 + max(height(y->left), height(y->right));
+    x->height = 1 + max(height(x->left), height(x->right));
+
+    return x;
+}
+
+// Left rotate function
+AVLNode* leftRotate(AVLNode *x) {
+    AVLNode *y = x->right;
+    AVLNode *T2 = y->left;
+
+    y->left = x;
+    x->right = T2;
+
+    x->height = 1 + max(height(x->left), height(x->right));
+    y->height = 1 + max(height(y->left), height(y->right));
+
+    return y;
+}
+
+// Insert function for AVL tree
+AVLNode* insertAVL(AVLNode* node, char *token, char *encoding) {
+    if (node == NULL) {
+        AVLNode* newNode = (AVLNode*)malloc(sizeof(AVLNode));
+        newNode->token = strdup(token);
+        newNode->encoding = strdup(encoding);
+        newNode->left = newNode->right = NULL;
+        newNode->height = 1;
+        return newNode;
     }
-    stack->data[++stack->top] = value;
+
+    // Insertion logic here (similar to BST)
+    if (strcmp(token, node->token) < 0) {
+        node->left = insertAVL(node->left, token, encoding);
+    } else if (strcmp(token, node->token) > 0) {
+        node->right = insertAVL(node->right, token, encoding);
+    } else {
+        return node; // Duplicates are not allowed
+    }
+
+    // Update height
+    node->height = 1 + max(height(node->left), height(node->right));
+
+    // Check for imbalance and perform rotations
+    int balance = getBalance(node);
+
+    if (balance > 1 && strcmp(token, node->left->token) < 0) {
+        return rightRotate(node);
+    }
+
+    if (balance < -1 && strcmp(token, node->right->token) > 0) {
+        return leftRotate(node);
+    }
+
+    if (balance > 1 && strcmp(token, node->left->token) > 0) {
+        node->left = leftRotate(node->left);
+        return rightRotate(node);
+    }
+
+    if (balance < -1 && strcmp(token, node->right->token) < 0) {
+        node->right = rightRotate(node->right);
+        return leftRotate(node);
+    }
+
+    return node;
 }
 
-static char pop(Stack *stack) {
-    if (stack->top == -1) return '\0'; // Stack underflow
-    return stack->data[stack->top--];
+// Recursive function to traverse the Huffman tree and store paths in AVL tree
+void traverseHuffman(struct huffmanTree *node, char *path, AVLNode **avlRoot) {
+    if (node == NULL) return;
+
+    if (node->token != NULL) {
+        *avlRoot = insertAVL(*avlRoot, node->token, path);
+    }
+
+    char leftPath[1000], rightPath[1000];
+    strcpy(leftPath, path);
+    strcpy(rightPath, path);
+    strcat(leftPath, "0");
+    strcat(rightPath, "1");
+
+    traverseHuffman(node->left, leftPath, avlRoot);
+    traverseHuffman(node->right, rightPath, avlRoot);
+}
+
+// Main function to create the AVL tree mapping from Huffman tree
+static AVLNode* AVLTreeMapping(struct huffmanTree *tree) {
+    AVLNode *avlRoot = NULL;
+    traverseHuffman(tree, "", &avlRoot);
+    return avlRoot;
+}
+
+static void freeAVLTree(AVLNode *root) {
+    if (root == NULL) return; // Base case
+
+    // Recursively free left and right subtrees
+    freeAVLTree(root->left);
+    freeAVLTree(root->right);
+
+    // Free dynamically allocated data within the node
+    free(root->token);
+    free(root->encoding);
+
+    // Finally, free the node itself
+    free(root);
+}
+
+// Helper function to get the maximum of two integers
+static int max(int a, int b) {
+    return (a > b) ? a : b;
 }
