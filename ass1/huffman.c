@@ -16,13 +16,26 @@ struct priority_queue {
     int capacity;
 };
 
+typedef struct Stack {
+    char *data;
+    int top;
+    int capacity;
+} Stack;
+
 static struct huffmanTree *createLeaf(struct item item);
 static struct huffmanTree *createNode(struct huffmanTree *left, struct huffmanTree *right);
+static char *findingEncoding(struct huffmanTree *tree, char *token);
 static struct priority_queue *priority_queue_new();
 static void priority_queue_free(struct priority_queue *queue);
 static int priority_queue_size(struct priority_queue *queue);
 static void priority_queue_insert(struct priority_queue *queue, struct huffmanTree *value);
 static struct huffmanTree *priority_queue_remove(struct priority_queue *queue);
+static Stack* createStack();
+static void resizeStack(Stack *stack);
+static void push(Stack *stack, char value);
+static char pop(Stack *stack);
+static char* stackToString(Stack *stack);
+static int findToken(struct huffmanTree *tree, char *token, Stack *stack, char **result);
 
 // Task 1
 void decode(struct huffmanTree *tree, char *encoding, char *outputFilename) {
@@ -118,7 +131,35 @@ struct huffmanTree *createHuffmanTree(char *inputFilename) {
 
 // Task 4
 char *encode(struct huffmanTree *tree, char *inputFilename) {
-	return NULL;
+	// Open to read the input file
+    File inputFile = FileOpenToRead(inputFilename);
+    
+    // Create a string to store the encoded string
+    char *outputString = malloc(1 * sizeof(char));
+    outputString[0] = '\0';
+
+    char token[MAX_TOKEN_LEN];
+    while ((FileReadToken(inputFile, token))) {
+        // Find the encoding for the current token
+        char *encoding = findingEncoding(tree, token);
+        // printf("Token: %s; Encoding: %s\n", token, encoding);
+
+        // Append the encoding to the output string
+        size_t newLength = strlen(outputString) + strlen(encoding) + 2;
+        outputString = realloc(outputString, newLength);
+        strcat(outputString, encoding);
+
+        // Free the encoding string
+        free(encoding);
+    }
+
+    // Append the null terminator to the output string
+    outputString = realloc(outputString, strlen(outputString) + 1);
+    strcat(outputString, "\0");
+
+    // Close the input file and return the encoded string
+    FileClose(inputFile);
+    return outputString;
 }
 
 //////////////////////
@@ -153,6 +194,42 @@ static struct huffmanTree *createNode(struct huffmanTree *left, struct huffmanTr
     return node;
 }
 
+static char* stackToString(Stack *stack) {
+    char *result = (char *)malloc((stack->top + 2) * sizeof(char));
+    strncpy(result, stack->data, stack->top + 1);
+    result[stack->top + 1] = '\0';
+    return result;
+}
+
+// Recursive function to find the Huffman encoding
+static int findToken(struct huffmanTree *tree, char *token, Stack *stack, char **result) {
+    if (!tree) return 0;
+
+    if (tree->token && strcmp(tree->token, token) == 0) {
+        *result = stackToString(stack);
+        return 1;
+    }
+
+    push(stack, '0');
+    if (findToken(tree->left, token, stack, result)) return 1;
+    pop(stack);
+
+    push(stack, '1');
+    if (findToken(tree->right, token, stack, result)) return 1;
+    pop(stack);
+
+    return 0;
+}
+
+static char* findingEncoding(struct huffmanTree *tree, char *token) {
+    Stack *stack = createStack();
+    char *result = NULL;
+    findToken(tree, token, stack, &result);
+    free(stack->data);
+    free(stack);
+    return result;
+}
+
 //// My Priority Queue Functions ////
 // Create a new internal node for the current item
 static struct priority_queue *priority_queue_new() {
@@ -174,6 +251,7 @@ static int priority_queue_size(struct priority_queue *queue) {
     return queue->size;
 }
 
+// Insert a new item into the priority queue
 static void priority_queue_insert(struct priority_queue *queue, struct huffmanTree *value) {
     if (queue->size == queue->capacity) {
         queue->capacity *= 2;
@@ -190,6 +268,7 @@ static void priority_queue_insert(struct priority_queue *queue, struct huffmanTr
     queue->size++;
 }
 
+// Remove and return the item with the lowest frequency from the priority queue
 static struct huffmanTree *priority_queue_remove(struct priority_queue *queue) {
     if (queue->size == 0) {
         return NULL;
@@ -213,4 +292,30 @@ static struct huffmanTree *priority_queue_remove(struct priority_queue *queue) {
         }
     }
     return result;
+}
+
+//// My Stack Functions ////
+static Stack* createStack() {
+    Stack *stack = (Stack *)malloc(sizeof(Stack));
+    stack->capacity = 10; // Initial capacity
+    stack->top = -1;
+    stack->data = (char *)malloc(stack->capacity * sizeof(char));
+    return stack;
+}
+
+static void resizeStack(Stack *stack) {
+    stack->capacity *= 2;
+    stack->data = (char *)realloc(stack->data, stack->capacity * sizeof(char));
+}
+
+static void push(Stack *stack, char value) {
+    if (stack->top == stack->capacity - 1) {
+        resizeStack(stack);
+    }
+    stack->data[++stack->top] = value;
+}
+
+static char pop(Stack *stack) {
+    if (stack->top == -1) return '\0'; // Stack underflow
+    return stack->data[stack->top--];
 }
