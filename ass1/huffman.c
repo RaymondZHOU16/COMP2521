@@ -161,15 +161,14 @@ char *encode(struct huffmanTree *tree, char *inputFilename) {
 
     char token[MAX_TOKEN_LEN];
     while ((FileReadToken(inputFile, token))) {
-        // Find the encoding for the current token
+        // Find the encoding for the current token 
+        // by post-order traversal of the AVL tree
         AVLNode *curr = avlRoot;
-        while (curr != NULL) {
+        while (curr != NULL && strcmp(token, curr->token) != 0) {
             if (strcmp(token, curr->token) < 0) {
                 curr = curr->left;
-            } else if (strcmp(token, curr->token) > 0) {
-                curr = curr->right;
             } else {
-                break;
+                curr = curr->right;
             }
         }
         if (curr == NULL) {
@@ -177,6 +176,7 @@ char *encode(struct huffmanTree *tree, char *inputFilename) {
             exit(EXIT_FAILURE);
         }
         char *encoding = strdup(curr->encoding);
+        printf("%s -> %s\n", token, encoding);
 
         // Append the encoding to the output string
         size_t newLength = strlen(outputString) + strlen(encoding) + 2;
