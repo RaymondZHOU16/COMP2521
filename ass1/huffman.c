@@ -176,7 +176,7 @@ char *encode(struct huffmanTree *tree, char *inputFilename) {
             exit(EXIT_FAILURE);
         }
         char *encoding = strdup(curr->encoding);
-        printf("%s -> %s\n", token, encoding);
+        //printf("%s -> %s\n", token, encoding);
 
         // Append the encoding to the output string
         size_t newLength = strlen(outputString) + strlen(encoding) + 2;
