@@ -34,7 +34,7 @@ NOTE:
   bstLevelOrder
 =================
 
-- Worst case time complexity: O(...)
+- Worst case time complexity: O(n)
 
 - Explanation: The function visits each node in the tree exactly once.
 
