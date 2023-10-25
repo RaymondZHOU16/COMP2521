@@ -421,8 +421,9 @@ static int max(int a, int b) { return (a > b) ? a : b; }
 
 //
 static char *findEncoding(AVLNode *root, char *token) {
-    if (root == NULL)
+    if (root == NULL) {
         return NULL;
+    }
 
     // Find the encoding for the current token
     AVLNode *curr = root;
