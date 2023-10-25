@@ -17,7 +17,7 @@ NOTE:
     bstRange
 =================
 
-- Worst case time complexity: O(h) = O(log n)
+- Worst case time complexity: O(h)
 
 - Explanation: The code traverses the left subtree to find the smallest value and the right subtree to find the largest value, 
   both of which take O(log n) time in a balanced binary search tree.
