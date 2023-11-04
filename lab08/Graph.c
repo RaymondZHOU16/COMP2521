@@ -114,10 +114,82 @@ void GraphShow(Graph g) {
 
 ////////////////////////////////////////////////////////////////////////
 // Your task
+struct edgeList {
+    struct edge *edges;
+    struct edgeList *next; 
+};
+
+// Sorts the edges of the given graph in ascending order of weight
+Pq sortedEdgesSet(Graph g) {
+    Pq pq = PqNew();
+    if (pq == NULL) {
+        fprintf(stderr, "edgeSet fail to create\n");
+        exit(EXIT_FAILURE);
+    }
+    for (int v = 0; v < g->nV; v++) {
+        for (int w = v + 1; w < g->nV; w++) {
+            double weight = GraphIsAdjacent(g, v, w);
+            if (weight > 0.0) {
+                PqInsert(pq, (struct edge){v, w, g->edges[v][w]});
+            }
+        }
+    }
+    return pq;
+}
+
+static bool hasCycleHelper(Graph g, Vertex v, bool *visited, Vertex parent) {
+    visited[v] = true;
+    for (int w = 0; w < g->nV; w++) {
+        if (g->edges[v][w] != 0.0) {
+            if (!visited[w]) {
+                if (hasCycleHelper(g, w, visited, v)) {
+                    return true;
+                }
+            } else if (w != parent) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Checks if the given edge would create a cycle in the given graph by DFS 
+static bool hasCycle(Graph g) {
+    bool *visited = malloc(g->nV  * sizeof(bool));
+    for (int i = 0; i < g->nV; i++) {
+        visited[i] = false;
+    }
+
+    for (int i = 0; i < g->nV; i++) {
+        if (visited[i] == false && hasCycleHelper(g, i, visited, -1)) {
+            free(visited);
+            return true;
+        }    
+    }
+    free(visited);
+    return false;
+}
 
 Graph GraphMst(Graph g) {
     // TODO: Complete this function
-    return NULL;
+ 
+    Pq edgesSet = sortedEdgesSet(g);
+    Graph mst = GraphNew(g->nV);
+
+    for (int i = 0; mst->nE < g->nV - 1; i++) {
+        if (PqIsEmpty(edgesSet)) {
+            PqFree(edgesSet);
+            GraphFree(mst);
+            return NULL;
+        }
+        struct edge e = PqExtract(edgesSet);
+        GraphInsertEdge(mst, e);
+        if (hasCycle(mst)) {
+            GraphRemoveEdge(mst, e.v, e.w);
+        }
+    }
+    PqFree(edgesSet);
+    return mst;
 }
 
 ////////////////////////////////////////////////////////////////////////
