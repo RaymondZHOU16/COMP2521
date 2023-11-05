@@ -137,37 +137,52 @@ Pq sortedEdgesSet(Graph g) {
     return pq;
 }
 
-static bool hasCycleHelper(Graph g, Vertex v, bool *visited, Vertex parent) {
-    visited[v] = true;
-    for (int w = 0; w < g->nV; w++) {
-        if (g->edges[v][w] != 0.0) {
-            if (!visited[w]) {
-                if (hasCycleHelper(g, w, visited, v)) {
-                    return true;
-                }
-            } else if (w != parent) {
-                return true;
-            }
+// Find function using iterative approach to avoid deep nesting
+int find(int parent[], int i) {
+    while (parent[i] != -1) {
+        i = parent[i];
+    }
+    return i;
+}
+
+// Union function to union two subsets
+void unionSet(int parent[], int x, int y) {
+    int xset = find(parent, x);
+    int yset = find(parent, y);
+    if (xset != yset) {
+        parent[xset] = yset;
+    }
+}
+
+//
+static bool hasCycleHelper(Graph g, int i, int j, int parent[]) {
+    if (g->edges[i][j] != 0.0) {
+        int x = find(parent, i);
+        int y = find(parent, j);
+        if (x == y) {
+            return true;
         }
+        unionSet(parent, x, y);
     }
     return false;
 }
 
-// Checks if the given edge would create a cycle in the given graph by DFS 
-static bool hasCycle(Graph g) {
-    bool *visited = malloc(g->nV  * sizeof(bool));
-    for (int i = 0; i < g->nV; i++) {
-        visited[i] = false;
+// Function to check for a cycle in the graph using Union-Find
+static bool hasCycle(struct graph *g) {
+    bool hasCycle = false;
+    int *parent = (int *)malloc(g->nV * sizeof(int));
+    for (int i = 0; i < g->nV; ++i) {
+        parent[i] = -1;
     }
 
-    for (int i = 0; i < g->nV; i++) {
-        if (visited[i] == false && hasCycleHelper(g, i, visited, -1)) {
-            free(visited);
-            return true;
-        }    
+    for (int i = 0; i < g->nV && !hasCycle; ++i) {
+        for (int j = i + 1; j < g->nV && !hasCycle; ++j) {
+            hasCycle = hasCycleHelper(g, i, j, parent);
+        }
     }
-    free(visited);
-    return false;
+
+    free(parent);
+    return hasCycle;
 }
 
 Graph GraphMst(Graph g) {
