@@ -17,7 +17,7 @@ int getPowerLine(Graph g, struct powerLine powerLines[], struct place cities[],
                  struct place powerPlant);
 void addPowerLine(Graph g, int i, int j, struct place cities[],
                   struct place powerPlant, struct powerLine powerLines[],
-                  int numLines);
+                  int *numLines);
 
 /**
  * Designs  a minimal cost electrical grid that will deliver electricity
@@ -85,8 +85,7 @@ int getPowerLine(Graph g, struct powerLine powerLines[], struct place cities[],
         for (int j = i + 1; j < GraphNumVertices(g); j++) {
             // If there is an edge between the two vertices, add the edge to the
             // power lines array
-            addPowerLine(g, i, j, cities, powerPlant, powerLines, numLines);
-            numLines++;
+            addPowerLine(g, i, j, cities, powerPlant, powerLines, &numLines);
         }
     }
 
@@ -97,15 +96,16 @@ int getPowerLine(Graph g, struct powerLine powerLines[], struct place cities[],
 // array
 void addPowerLine(Graph g, int i, int j, struct place cities[],
                   struct place powerPlant, struct powerLine powerLines[],
-                  int numLines) {
+                  int *numLines) {
     if (GraphIsAdjacent(g, i, j) != 0) {
         if (i == 0) {
             struct powerLine line = {powerPlant, cities[j - 1]};
-            powerLines[numLines] = line;
+            powerLines[*numLines] = line;
         } else {
             struct powerLine line = {cities[i - 1], cities[j - 1]};
-            powerLines[numLines] = line;
+            powerLines[*numLines] = line;
         }
+        (*numLines)++;
     }
 }
 
