@@ -18,7 +18,7 @@ struct query {
 	struct time time;
 };
 
-static RoadMap readRoadMap(char *filename);
+static RoadMap readRoadMap(char *filename, bool *hasClosedRoads);
 static struct query readRouteQuery(char *filename);
 
 static void displayRoute(struct route r);
@@ -34,10 +34,16 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	RoadMap map = readRoadMap(argv[1]);
+	bool hasClosedRoads = false;
+	RoadMap map = readRoadMap(argv[1], &hasClosedRoads);
 	struct query q = readRouteQuery(argv[2]);
 
-	struct route r = navigate(map, q.fromNode, q.toNode, q.time);
+	struct route r;
+	if (!hasClosedRoads) {
+		r = navigate(map, q.fromNode, q.toNode, q.time);
+	} else {
+		r = advancedNavigate(map, q.fromNode, q.toNode, q.time);
+	}
 
 	displayRoute(r);
 
@@ -47,7 +53,7 @@ int main(int argc, char *argv[]) {
 
 ////////////////////////////////////////////////////////////////////////
 
-static RoadMap readRoadMap(char *filename) {
+static RoadMap readRoadMap(char *filename, bool *hasClosedRoads) {
 	FILE *fp = fopen(filename, "r");
 	if (fp == NULL) {
 		fprintf(stderr, "error: failed to open '%s' for reading\n",
@@ -73,7 +79,12 @@ static RoadMap readRoadMap(char *filename) {
 			exit(EXIT_FAILURE);
 		}
 
-		RoadMapAddRoad(map, node1, node2, oneOrTwoWay == 2, minutes);
+		if (!RoadMapAddRoad(map, node1, node2, oneOrTwoWay == 2, minutes)) {
+			fprintf(stderr,
+			        "warning: road from %d to %d was not added\n"
+			        "         (RoadMapAddRoad returned false)\n",
+			        node1, node2);
+		}
 	}
 
 	int numTrafficLights = 0;
@@ -94,6 +105,10 @@ static RoadMap readRoadMap(char *filename) {
 
 	int numClosedRoads = 0;
 	if (fscanf(fp, "%d", &numClosedRoads) == 1) {
+		if (numClosedRoads > 0) {
+			*hasClosedRoads = true;
+		}
+
 		for (int i = 0; i < numClosedRoads; i++) {
 			int from = 0;
 			int to = 0;
@@ -102,6 +117,7 @@ static RoadMap readRoadMap(char *filename) {
 			if (fscanf(fp, "%d %d %d:%d %d:%d", &from, &to,
 					&(t1.hour), &(t1.minute), &(t2.hour), &(t2.minute)) != 6) {
 				fprintf(stderr, "error: failed to read road closed time\n");
+				exit(EXIT_FAILURE);
 			}
 			
 			RoadMapSetClosedTimes(map, from, to, t1, t2);
