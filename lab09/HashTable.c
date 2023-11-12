@@ -76,6 +76,7 @@ void HashTableInsert(HashTable table, int key, int value) {
 
 void HashTableDelete(HashTable table, int key) {
 	// TODO: Complete this function!
+	
 }
 
 /////////////////////////////////////////////////////

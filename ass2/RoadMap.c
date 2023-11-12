@@ -10,6 +10,9 @@
 
 struct roadMap {
 	// TODO
+	int nV;      // #vertices
+	int nE;      // #edges
+	int **edges; // matrix of weights (0 == no edge)
 };
 
 ////////////////////////////////////////////////////////////////////////

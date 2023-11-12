@@ -191,6 +191,7 @@ Graph GraphMst(Graph g) {
     Pq edgesSet = sortedEdgesSet(g);
     Graph mst = GraphNew(g->nV);
 
+    // Kruskal's Method
     for (int i = 0; mst->nE < g->nV - 1; i++) {
         if (PqIsEmpty(edgesSet)) {
             PqFree(edgesSet);
