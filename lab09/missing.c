@@ -41,6 +41,27 @@ int main(int argc, char *argv[]) {
  */
 int findMissingInteger(int *integers, int n) {
 	// TODO: Complete this function!
-	return -1;
+
+	// Create a new hash table
+    HashTable table = HashTableNew();
+
+    // Insert each integer into the hash table
+    for (int i = 0; i < n - 1; i++) {
+        HashTableInsert(table, integers[i], 1);
+    }
+
+    // Check for each integer from 1 to n
+    for (int i = 1; i <= n; i++) {
+        if (!HashTableContains(table, i)) {
+            // Found the missing integer
+            HashTableFree(table);
+            return i;
+        }
+    }
+
+    // Should never reach here if the input array is well-formed
+    HashTableFree(table);
+    return -1; // Return -1 or an appropriate error code
+
 }
 

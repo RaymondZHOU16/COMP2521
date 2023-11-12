@@ -33,6 +33,43 @@ int main(int argc, char *argv[]) {
  */
 bool areSimilarStrings(char *s1, char *s2) {
 	// TODO: Complete this function!
-	return false;
+    // Check if lengths of s1 and s2 are the same
+    int len1 = strlen(s1);
+    int len2 = strlen(s2);
+    if (len1 != len2) {
+        return false;
+    }
+
+    HashTable charMap = HashTableNew();
+    HashTable reverseMap = HashTableNew();
+
+    for (int i = 0; i < len1; i++) {
+        char from = s1[i];
+        char to = s2[i];
+
+        if (HashTableContains(charMap, from)) {
+            // If 'from' is already mapped to a different character, return false
+            if (HashTableGet(charMap, from) != to) {
+                HashTableFree(charMap);
+                HashTableFree(reverseMap);
+                return false;
+            }
+        } else {
+            // If 'to' is already mapped from a different character, return false
+            if (HashTableContains(reverseMap, to)) {
+                HashTableFree(charMap);
+                HashTableFree(reverseMap);
+                return false;
+            }
+
+            // Add the mapping
+            HashTableInsert(charMap, from, to);
+            HashTableInsert(reverseMap, to, from);
+        }
+    }
+
+    HashTableFree(charMap);
+    HashTableFree(reverseMap);
+    return true;
 }
 

@@ -49,6 +49,34 @@ int main(int argc, char *argv[]) {
  */
 int findWinner(int *ballots, int numBallots) {
 	// TODO: Complete this function!
-	return NO_WINNER;
+
+    HashTable voteCounts = HashTableNew();
+
+    for (int i = 0; i < numBallots; i++) {
+        int candidate = ballots[i];
+        int currentCount = HashTableGetOrDefault(voteCounts, candidate, 0);
+        HashTableInsert(voteCounts, candidate, currentCount + 1);
+    }
+
+    int maxVotes = 0;
+    int winner = NO_WINNER;
+    bool isTie = false;
+
+    for (int i = 0; i < numBallots; i++) {
+        int candidate = ballots[i];
+        int votes = HashTableGet(voteCounts, candidate);
+
+        if (votes > maxVotes) {
+            maxVotes = votes;
+            winner = candidate;
+            isTie = false;
+        } else if (votes == maxVotes && candidate != winner) {
+            isTie = true;
+        }
+    }
+
+    HashTableFree(voteCounts);
+
+    return isTie ? NO_WINNER : winner;
 }
 

@@ -72,11 +72,40 @@ void HashTableInsert(HashTable table, int key, int value) {
 	}
 
 	// TODO: Complete the rest of this function!
+    // Linear probing
+	int index = key % table->numSlots;
+    while (!table->slots[index].empty && table->slots[index].key != key) {
+        index = (index + 1) % table->numSlots; // Wrap around to the start
+    }
+
+    // Overwrite the value if the key already exists, or insert if the slot is empty
+    table->slots[index].key = key;
+    table->slots[index].value = value;
+
+    // If a new item was inserted, increase the count of items
+    if (table->slots[index].empty) {
+        table->slots[index].empty = false; // Mark the slot as occupied
+		table->numItems++;
+    }
 }
 
 void HashTableDelete(HashTable table, int key) {
 	// TODO: Complete this function!
-	
+	if (HashTableContains(table, key)) {
+		int index = getIndex(table, key);
+		table->slots[index].empty = true;
+		table->numItems--;
+
+		// Rehash the table
+		for (int i = index + 1; !table->slots[i].empty; i = (i + 1) % table->numSlots) {
+			int newIndex = hash(table->slots[i].key, table->numSlots);
+			if (newIndex != i) {
+				struct slot temp = table->slots[i];
+				table->slots[i] = table->slots[newIndex];
+				table->slots[newIndex] = temp;
+			}
+		}
+	}
 }
 
 /////////////////////////////////////////////////////
