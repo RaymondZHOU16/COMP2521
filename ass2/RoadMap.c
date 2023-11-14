@@ -70,18 +70,17 @@ bool RoadMapAddRoad(RoadMap map, int node1, int node2,
     // check if already MAX_ROADS_PER_NODE roads connected to node1 or node2
     // check if there is already a road (one-way or two-way) between node1 and
     // node2
-    if (map->roads == NULL || checkNodesMaxConnected(map, node1) ||
-        checkNodesMaxConnected(map, node2) ||
-        checkRoadInMap(map, node1, node2)) {
+    if (map->roads == NULL || (checkNodesMaxConnected(map, node1) &&
+        checkNodesMaxConnected(map, node2) &&
+        checkRoadInMap(map, node1, node2))) {
         // add road to map
         addRoadToMap(map, node1, node2, travelMinutes);
         if (isTwoWay) {
             addRoadToMap(map, node2, node1, travelMinutes);
         }
 		map->nR++;
-		printf("Road added from %d to %d\nTotal number of roads and "
-				"edges is %d and %d\n",
-				node1, node2, map->nR, map->nE);
+		//printf("Road added from %d to %d\n", node1, node2);
+		//printf("Total number of roads and edges is %d and %d\n", map->nR, map->nE);
 		return true;
     }
 
@@ -170,8 +169,8 @@ static bool checkNodesMaxConnected(RoadMap map, int node) {
             numRoads++;
         }
     }
-	printf("Number of roads connected to node %d is %d\n", node, numRoads);
-    return numRoads < MAX_ROADS_PER_NODE;
+	printf("Number of coneections is %d for node %d\n", numRoads, node);
+    return numRoads <= MAX_ROADS_PER_NODE;
 }
 
 // check if road is not already in map, return true if it is
