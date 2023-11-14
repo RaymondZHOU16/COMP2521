@@ -10,15 +10,19 @@
 
 struct roadMap {
 	// TODO
-	int nV;      // #vertices
-	int nE;      // #edges
-	int nR;      // #roads
+	int nN;      // number of nodes
+	int nR;      // number of roads
+	int nI;      // number of islands
 	struct road **roads; // array of roads
+	bool *isTwoWay; // array of booleans to indicate if road is two-way
+	int *islandIds;    // array to store island ID for each node
+    char **islandNames;    // array to store names of the islands
 };
 
-static bool checkNodesMaxConnected(RoadMap map, int node);
-static bool checkRoadInMap(RoadMap map, int node1, int node2);
-static void addRoadToMap(RoadMap map, int node1, int node2, int travelMinutes);
+static bool checkMaxRoads(RoadMap map, int node);
+static bool checkRoadExists(RoadMap map, int node1, int node2);
+static void addRoad(RoadMap map, int node1, int node2, bool isTwoWay, int travelMinutes);
+static void DFS(RoadMap map, int node, int islandID);
 
 ////////////////////////////////////////////////////////////////////////
 // Task 1
@@ -30,32 +34,42 @@ RoadMap RoadMapNew(int numNodes) {
 		exit(EXIT_FAILURE);
 	}
 
+	// initialise map
 	RoadMap map = malloc(sizeof(*map));
 	if (map == NULL) {
 		fprintf(stderr, "error: out of memory\n");
 		exit(EXIT_FAILURE);
 	}
 
-	map->nV = numNodes;
-	map->nE = 0;
+	map->nN = numNodes;
 	map->nR = 0;
+	map->nI = 0;
 	map->roads = NULL;
+	map->isTwoWay = NULL;
+	map->islandIds = NULL;
+	map->islandNames = NULL;
 
 	return map;
 }
 
 void RoadMapFree(RoadMap map) {
 	// TODO
-	for (int i = 0; i < map->nE; i++) {
+	for (int i = 0; i < map->nR; i++) {
 		free(map->roads[i]);
 	}
+	for (int i = 0; i < map->nI; i++) {
+		free(map->islandNames[i]);
+	}
 	free(map->roads);
+	free(map->isTwoWay);
+	free(map->islandIds);
+	free(map->islandNames);
 	free(map);
 }
 
 int RoadMapNumNodes(RoadMap map) {
 	// TODO
-	return map->nV;
+	return map->nN;
 }
 
 int RoadMapNumRoads(RoadMap map) {
@@ -66,33 +80,32 @@ int RoadMapNumRoads(RoadMap map) {
 bool RoadMapAddRoad(RoadMap map, int node1, int node2,
                     bool isTwoWay, int travelMinutes) {
     // TODO
-    // check if map is empty
-    // check if already MAX_ROADS_PER_NODE roads connected to node1 or node2
-    // check if there is already a road (one-way or two-way) between node1 and
-    // node2
-    if (map->roads == NULL || (checkNodesMaxConnected(map, node1) &&
-        checkNodesMaxConnected(map, node2) &&
-        checkRoadInMap(map, node1, node2))) {
-        // add road to map
-        addRoadToMap(map, node1, node2, travelMinutes);
-        if (isTwoWay) {
-            addRoadToMap(map, node2, node1, travelMinutes);
+	if (map->roads == NULL) {
+		// add first road
+		addRoad(map, node1, node2, isTwoWay, travelMinutes);
+    } else {
+        // check if road already exists and if node has max roads
+        if (checkRoadExists(map, node1, node2) || !checkMaxRoads(map, node1) ||
+            !checkMaxRoads(map, node2)) {
+            return false;
         }
-		map->nR++;
-		//printf("Road added from %d to %d\n", node1, node2);
-		//printf("Total number of roads and edges is %d and %d\n", map->nR, map->nE);
-		return true;
-    }
-
-    return false;
+		// add road
+		addRoad(map, node1, node2, isTwoWay, travelMinutes);
+	}
+    return true;
 }
 
 int RoadMapGetRoadsFrom(RoadMap map, int node, struct road roads[]) {
     // TODO
-    int numRoads = 0;
-	for (int i = 0; i < map->nE; i++) {
+	int numRoads = 0;
+	for (int i = 0; i < map->nR; i++) {
 		if (map->roads[i]->fromNode == node) {
 			roads[numRoads] = *(map->roads[i]);
+			numRoads++;
+		} else if (map->roads[i]->toNode == node && map->isTwoWay[i]) {
+			roads[numRoads].fromNode = node;
+			roads[numRoads].toNode = map->roads[i]->fromNode;
+			roads[numRoads].travelMinutes = map->roads[i]->travelMinutes;
 			numRoads++;
 		}
 	}
@@ -101,13 +114,26 @@ int RoadMapGetRoadsFrom(RoadMap map, int node, struct road roads[]) {
 
 int RoadMapGetRoadsTo(RoadMap map, int node, struct road roads[]) {
 	// TODO
-    int numRoads = 0;
-	for (int i = 0; i < map->nE; i++) {
+	int numRoads = 0;
+	for (int i = 0; i < map->nR; i++) {
 		if (map->roads[i]->toNode == node) {
 			roads[numRoads] = *(map->roads[i]);
 			numRoads++;
+		} else if (map->roads[i]->fromNode == node && map->isTwoWay[i]) {
+			roads[numRoads].fromNode = map->roads[i]->toNode;
+			roads[numRoads].toNode = node;
+			roads[numRoads].travelMinutes = map->roads[i]->travelMinutes;
+			numRoads++;
 		}
 	}
+
+	/*
+	printf("node %d has %d roads connected\n", node, numRoads);
+	for (int i = 0; i < numRoads; i++) {
+		printf("road %d: %d -> %d\n", i, roads[i].fromNode, roads[i].toNode);
+	}
+	*/
+
     return numRoads;
 }
 
@@ -116,25 +142,58 @@ int RoadMapGetRoadsTo(RoadMap map, int node, struct road roads[]) {
 
 void RoadMapProcessIslands(RoadMap map) {
 	// TODO
+	// Initialize islandIds to -1, indicating unvisited nodes
+    map->islandIds = malloc(sizeof(int) * map->nN);
+    for (int i = 0; i < map->nN; i++) {
+        map->islandIds[i] = -1;
+    }
+
+    int islandID = 0;
+
+    // Run DFS for each node
+    for (int i = 0; i < map->nN; i++) {
+        if (map->islandIds[i] == -1) {
+            DFS(map, i, islandID);
+            islandID++;
+        }
+    }
+
+	// Initialize islandNames to "(unnamed)"
+	map->islandNames = malloc(sizeof(char *) * islandID);
+	for (int i = 0; i < islandID; i++) {
+		map->islandNames[i] = malloc(sizeof(char) * 10);
+		strcpy(map->islandNames[i], "(unnamed)");
+	}
+
+    // Store the number of islands
+    map->nI = islandID;
+
 }
 
 int RoadMapNumIslands(RoadMap map) {
 	// TODO
-	return 0;
+	return map->nI;
 }
 
 bool RoadMapOnSameIsland(RoadMap map, int node1, int node2) {
 	// TODO
-	return 0;
+	if (map->islandIds[node1] == map->islandIds[node2]) {
+		return true;
+	} else {
+		return false;
+	}
 }
 
 void RoadMapSetIslandName(RoadMap map, int node, char *name) {
 	// TODO
+	int islandID = map->islandIds[node];
+	strcpy(map->islandNames[islandID], name);
 }
 
 char *RoadMapGetIslandName(RoadMap map, int node) {
 	// TODO
-	return "(unnamed)";
+	int islandID = map->islandIds[node];
+	return map->islandNames[islandID];
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -160,48 +219,66 @@ void RoadMapSetClosedTimes(RoadMap map, int node1, int node2,
 ////////////////////////////////////////////////////////////////////////
 // My helper functions
 
-// check if there is not already MAX_ROADS_PER_NODE roads connected to node,
-// return true if there is
-static bool checkNodesMaxConnected(RoadMap map, int node) {
-    int numRoads = 0;
-    for (int i = 0; i < map->nE; i++) {
-        if (map->roads[i]->fromNode == node || map->roads[i]->toNode == node) {
-            numRoads++;
-        }
-    }
-	printf("Number of coneections is %d for node %d\n", numRoads, node);
-    return numRoads <= MAX_ROADS_PER_NODE;
-}
-
-// check if road is not already in map, return true if it is
-static bool checkRoadInMap(RoadMap map, int node1, int node2) {
-	for (int i = 0; i < map->nE; i++) {
-		if ((map->roads[i]->fromNode == node1 && map->roads[i]->toNode == node2) ||
-			(map->roads[i]->fromNode == node2 && map->roads[i]->toNode == node1)) {
-			return false;
+// check if node has max roads
+// returns true if node has less than max roads, false otherwise
+static bool checkMaxRoads(RoadMap map, int node) {
+	int nR = 0;
+	for (int i = 0; i < map->nR; i++) {
+		if (map->roads[i]->fromNode == node || map->roads[i]->toNode == node) {
+			nR++;
 		}
 	}
+	if (nR == MAX_ROADS_PER_NODE) {
+		return false;
+	}
+	//printf("//checking node %d has %d roads connected\n", node, nR);
 	return true;
 }
 
-// add road to map
-static void addRoadToMap(RoadMap map, int node1, int node2, int travelMinutes) {
-	struct road *newRoad = malloc(sizeof(struct road));
-	if (newRoad == NULL) {
-		fprintf(stderr, "error: out of memory\n");
-		exit(EXIT_FAILURE);
+// check if road is already in map, regardless of direction
+// returns true if road exists, false otherwise
+static bool checkRoadExists(RoadMap map, int node1, int node2) {
+	for (int i = 0; i < map->nR; i++) {
+		if ((map->roads[i]->fromNode == node1 && map->roads[i]->toNode == node2) || 
+			(map->roads[i]->fromNode == node2 && map->roads[i]->toNode == node1)) {
+			return true;
+		}
 	}
-	newRoad->fromNode = node1;
-	newRoad->toNode = node2;
-	newRoad->travelMinutes = travelMinutes;
-	newRoad->closedFrom = (struct time){0, 0};
-	newRoad->closedUntil = (struct time){0, 0};
-	map->roads = realloc(map->roads, (map->nE + 1) * sizeof(*map->roads));
+	return false;
+}
+
+// add road to map
+static void addRoad(RoadMap map, int node1, int node2, bool isTwoWay, int travelMinutes) {
+	map->nR++;
+	map->roads = realloc(map->roads, map->nR * sizeof(*(map->roads)));
 	if (map->roads == NULL) {
 		fprintf(stderr, "error: out of memory\n");
 		exit(EXIT_FAILURE);
 	}
-	map->roads[map->nE] = newRoad;
-	map->nE++;
+	map->roads[map->nR - 1] = malloc(sizeof(struct road));
+	if (map->roads[map->nR - 1] == NULL) {
+		fprintf(stderr, "error: out of memory\n");
+		exit(EXIT_FAILURE);
+	}
+	map->roads[map->nR - 1]->fromNode = node1;
+	map->roads[map->nR - 1]->toNode = node2;
+	map->roads[map->nR - 1]->travelMinutes = travelMinutes;
+	map->isTwoWay = realloc(map->isTwoWay, map->nR * sizeof(bool));
+	if (map->isTwoWay == NULL) {
+		fprintf(stderr, "error: out of memory\n");
+		exit(EXIT_FAILURE);
+	}
+	map->isTwoWay[map->nR - 1] = isTwoWay ? true : false;
 }
 
+// DFS to find islands
+static void DFS(RoadMap map, int node, int islandID) {
+	map->islandIds[node] = islandID;
+	struct road roads[MAX_ROADS_PER_NODE];
+	int numRoads = RoadMapGetRoadsFrom(map, node, roads);
+	for (int i = 0; i < numRoads; i++) {
+		if (map->islandIds[roads[i].toNode] == -1) {
+			DFS(map, roads[i].toNode, islandID);
+		}
+	}
+}
