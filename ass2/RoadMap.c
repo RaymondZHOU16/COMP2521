@@ -17,6 +17,7 @@ struct roadMap {
 	bool *isTwoWay; // array of booleans to indicate if road is two-way
 	int *islandIds;    // array to store island ID for each node
     char **islandNames;    // array to store names of the islands
+	bool *trafficLights; // array to store traffic light nodes
 };
 
 static bool checkMaxRoads(RoadMap map, int node);
@@ -48,6 +49,14 @@ RoadMap RoadMapNew(int numNodes) {
 	map->isTwoWay = NULL;
 	map->islandIds = NULL;
 	map->islandNames = NULL;
+	map->trafficLights = malloc(sizeof(int) * numNodes);
+	if (map->trafficLights == NULL) {
+		fprintf(stderr, "error: out of memory\n");
+		exit(EXIT_FAILURE);
+	}
+	for (int i = 0; i < numNodes; i++) {
+		map->trafficLights[i] = false;
+	}
 
 	return map;
 }
@@ -64,6 +73,7 @@ void RoadMapFree(RoadMap map) {
 	free(map->isTwoWay);
 	free(map->islandIds);
 	free(map->islandNames);
+	free(map->trafficLights);
 	free(map);
 }
 
@@ -201,11 +211,16 @@ char *RoadMapGetIslandName(RoadMap map, int node) {
 
 void RoadMapAddTrafficLights(RoadMap map, int node) {
 	// TODO
+	map->trafficLights[node] = true;
 }
 
 bool RoadMapHasTrafficLights(RoadMap map, int node) {
 	// TODO
-	return false;
+	if (map->trafficLights[node]) {
+		return true;
+	} else {
+		return false;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////
