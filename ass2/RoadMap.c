@@ -24,6 +24,7 @@ static bool checkMaxRoads(RoadMap map, int node);
 static bool checkRoadExists(RoadMap map, int node1, int node2);
 static void addRoad(RoadMap map, int node1, int node2, bool isTwoWay, int travelMinutes);
 static void DFS(RoadMap map, int node, int islandID);
+static int findRoad(RoadMap map, int node1, int node2);
 
 ////////////////////////////////////////////////////////////////////////
 // Task 1
@@ -229,6 +230,13 @@ bool RoadMapHasTrafficLights(RoadMap map, int node) {
 void RoadMapSetClosedTimes(RoadMap map, int node1, int node2,
                            struct time from, struct time until) {
 	// TODO
+	int roadIndex = findRoad(map, node1, node2);
+	if (roadIndex == -1) {
+		fprintf(stderr, "error: road not found\n");
+		exit(EXIT_FAILURE);
+	}
+	map->roads[roadIndex]->closedFrom = from;
+	map->roads[roadIndex]->closedUntil = until;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -296,4 +304,23 @@ static void DFS(RoadMap map, int node, int islandID) {
 			DFS(map, roads[i].toNode, islandID);
 		}
 	}
+}
+
+// find road in map
+// returns index of road in map, -1 if road not found
+static int findRoad(RoadMap map, int node1, int node2) {
+    for (int i = 0; i < map->nR; i++) {
+        // is two-way road
+        if (map->isTwoWay[i]) {
+            if ((map->roads[i]->fromNode == node1 && map->roads[i]->toNode == node2) ||
+				(map->roads[i]->fromNode == node2 && map->roads[i]->toNode == node1)) {
+				return i;
+			}
+        } else {
+			if (map->roads[i]->fromNode == node1 && map->roads[i]->toNode == node2) {
+				return i;
+			}
+        }
+    }
+    return -1;
 }

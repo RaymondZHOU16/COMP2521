@@ -172,6 +172,8 @@ struct route advancedNavigate(RoadMap map, int fromNode, int toNode,
 		.legs = NULL,
 	};
 
+	
+
 	return route;
 }
 
