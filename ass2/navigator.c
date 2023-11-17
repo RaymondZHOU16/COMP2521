@@ -308,6 +308,7 @@ static void getRoute(RoadMap map, int fromNode, int toNode, struct time time, in
 			route->legs[i].start = currTime;
 		}
 		route->legs[i].end = TimeAddMinutes(currTime, route->legs[i].duration);
+		currTime = route->legs[i].end;
 	}
 	route->start = route->legs[0].start;
 	route->end = route->legs[route->numLegs - 1].end;
