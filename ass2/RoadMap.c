@@ -292,6 +292,12 @@ static void addRoad(RoadMap map, int node1, int node2, bool isTwoWay, int travel
 		exit(EXIT_FAILURE);
 	}
 	map->isTwoWay[map->nR - 1] = isTwoWay ? true : false;
+
+	// for task 4
+	map->roads[map->nR - 1]->closedFrom.hour = -1;
+	map->roads[map->nR - 1]->closedFrom.minute = -1;
+	map->roads[map->nR - 1]->closedUntil.hour = -1;
+	map->roads[map->nR - 1]->closedUntil.minute = -1;
 }
 
 // DFS to find islands
