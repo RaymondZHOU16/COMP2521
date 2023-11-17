@@ -138,16 +138,16 @@ struct route advancedNavigate(RoadMap map, int fromNode, int toNode,
 			}
 		}
 		free(fromRoads);
-		// print dist and prev
-		printf("node: ");
-		for (int i = 0; i < numNodes; i++) { printf("%5d ", i); }
-		printf("\n");
-		printf("dist: ");
-		for (int i = 0; i < numNodes; i++) { printf("%2d:%2d ", dist[i].hour, dist[i].minute); }
-		printf("\n");
-		printf("prev: ");
-		for (int i = 0; i < numNodes; i++) { printf("%5d ", prev[i]); }
-		printf("\n");
+		// // print dist and prev
+		// printf("node: ");
+		// for (int i = 0; i < numNodes; i++) { printf("%5d ", i); }
+		// printf("\n");
+		// printf("dist: ");
+		// for (int i = 0; i < numNodes; i++) { printf("%2d:%2d ", dist[i].hour, dist[i].minute); }
+		// printf("\n");
+		// printf("prev: ");
+		// for (int i = 0; i < numNodes; i++) { printf("%5d ", prev[i]); }
+		// printf("\n");
 
 		// Find the minimum distance node from the set of vertices not yet processed
         u = minDistance(dist, visited, numNodes);
@@ -170,12 +170,12 @@ struct route advancedNavigate(RoadMap map, int fromNode, int toNode,
 	path[pathLength] = fromNode;
 	pathLength++;
 
-	// print path
-	printf("path: ");
-	for (int i = 0; i < pathLength - 1; i++) {
-	    printf(" %d ->", path[i]);
-	}
-	printf("%d\n", path[pathLength - 1]);
+	// // print path
+	// printf("path: ");
+	// for (int i = 0; i < pathLength - 1; i++) {
+	//     printf(" %d ->", path[i]);
+	// }
+	// printf("%d\n", path[pathLength - 1]);
 
 	// store route and legs
 	route.numLegs = pathLength - 1;
@@ -184,10 +184,10 @@ struct route advancedNavigate(RoadMap map, int fromNode, int toNode,
 		fprintf(stderr, "error: out of memory\n");
 		exit(EXIT_FAILURE);
 	}
-	struct time currTime = time;
-	for (int i = 0; i < route.numLegs; i++) {
-		route.legs[i].fromNode = path[i];
-		route.legs[i].toNode = path[i + 1];
+	struct time currTime;
+	for (int i = route.numLegs - 1; i >= 0; i--) {
+		route.legs[i].fromNode = path[i - 1];
+		route.legs[i].toNode = path[i];
 		route.legs[i].duration = RoadMapGetTravelTime(map, path[i], path[i + 1]);
 		// find travel time, and remove traffic light wait time
 		if (RoadMapHasTrafficLights(map, path[i]) &&
