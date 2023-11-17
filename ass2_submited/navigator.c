@@ -22,6 +22,7 @@ static int compareTime(struct time t1, struct time t2);
 static int minDistance(struct time dist[], bool visited[], int numNodes);
 static bool RoadMapIsClosed(RoadMap map, struct road road, struct time time);
 static int getMinutes(struct time start, struct time end);
+static bool isClosureRoad(RoadMap map, int fromNode, int toNode);
 
 ////////////////////////////////////////////////////////////////////////
 // Task 3
@@ -190,7 +191,13 @@ struct route advancedNavigate(RoadMap map, int fromNode, int toNode,
         route.legs[i].start = TimeAddMinutes(currTime, -route.legs[i].duration);
 
         indexPath--;
-        currTime = route.legs[i].start;
+        // check if road is closed
+        if ((indexPath > 0) &&
+            isClosureRoad(map, path[indexPath - 1], path[indexPath])) {
+            currTime = dist[path[indexPath]];
+        } else {
+            currTime = route.legs[i].start;
+        }
     }
     route.start = route.legs[0].start;
     route.end = route.legs[route.numLegs - 1].end;
@@ -417,4 +424,24 @@ static int getMinutes(struct time start, struct time end) {
     minutes += (end.hour - start.hour) * MINUTES_PER_HOUR;
     minutes += end.minute - start.minute;
     return minutes;
+}
+
+// task 4 get road from nodes
+static bool isClosureRoad(RoadMap map, int fromNode, int toNode) {
+    struct road *fromRoads = malloc(sizeof(struct road) * MAX_ROADS_PER_NODE);
+    if (fromRoads == NULL) {
+        fprintf(stderr, "error: out of memory\n");
+        exit(EXIT_FAILURE);
+    }
+    int numFromRoads = RoadMapGetRoadsFrom(map, fromNode, fromRoads);
+    for (int i = 0; i < numFromRoads; i++) {
+        if (fromRoads[i].toNode == toNode) {
+            if (fromRoads[i].closedFrom.hour == -1) {
+                free(fromRoads);
+                return false;
+            }
+        }
+    }
+    free(fromRoads);
+    return true;
 }
