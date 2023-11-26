@@ -3,18 +3,19 @@ Question 3
 (a) Which of the given sequences (A, B, C or D) would be produced by a
     valid post-order traversal of the same tree? Explain your answer.
 
-
+    B. 
 
 (b)
 
-Value in the root node: 
+Value in the root node: 36
 
-Value in the left child (of the root): 
+Value in the left child (of the root): 32
 
-Value in the right child (of the root): 
+Value in the right child (of the root): 39
 
 (c) Give the rotations that are performed (if any) as a result of
     inserting each value.
 
-
+inserting 25, rotating right at 22
+inserting 8, right at 13 -> left at 5
 

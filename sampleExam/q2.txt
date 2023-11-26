@@ -2,6 +2,6 @@ Question 2
 
 Explain why the compilation error occurred and briefly describe how it
 can be fixed.
-
-
+graph is a ADT
+to fix it by use function in graph.h
 

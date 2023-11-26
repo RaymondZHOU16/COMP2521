@@ -3,15 +3,15 @@ Question 7
 (a) How many items are examined in searching for the key 42? Justify
     your answer.
 
-
+    4
 
 (b) How many items are examined in searching for the key 111? Justify
     your answer.
 
-
+    10
 
 (c) What is the worst-case search cost after N total items have been
     inserted? Justify your answer.
 
-
+    N/11
 

@@ -3,10 +3,11 @@ Question 5
 (a) Describe and justify the steps you would take to determine which
     sorting algorithm the program uses.
 
-
+    use different sizes of data to find time complexity and use spacify case like decraseing order
+    for selecttinon, ...
 
 (b) Is the sorting algorithm that the program uses stable? How confident
     are you in your conclusion? Explain your answer.
 
-
+    stable, not certain
 
